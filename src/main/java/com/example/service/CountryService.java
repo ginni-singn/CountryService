@@ -1,10 +1,7 @@
-
 package com.example.service;
 
 import com.example.exception.*;
 import com.example.model.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import java.util.*;
@@ -12,12 +9,6 @@ import java.util.*;
 @Service
 public class CountryService {
 
-    @Autowired
-    private RestTemplate restTemplate;
-
-    public CountryService(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
-    }
 
     public CountryResponse getCountry(String code) {
 
@@ -38,24 +29,11 @@ public class CountryService {
             throw new NotFoundException("Country not found");
         }
 
-
         ExternalCountryResponse c = response[0];
-
-
-
 
         return CountryResponse.builder()
                 .countryCode(code.toUpperCase())
-                .name(c.getName() != null ? c.getName().getCommon() : null)
-                //.name(c.getName().getCommon())
-                .capital(c.getCapital() != null && !c.getCapital().isEmpty() ? c.getCapital().get(0) : null)
-                //.capital(c.getCapital() != null ? c.getCapital().get(0) : null)
                 .region(c.getRegion())
-                .currencies(c.getCurrencies() != null ? new ArrayList<>(c.getCurrencies().keySet()) : Collections.emptyList())
-                //.currencies(new ArrayList<>(c.getCurrencies().keySet()))
-                .languages(c.getLanguages() != null ? new ArrayList<>(c.getLanguages().values()) : Collections.emptyList())
-
-                //.languages(new ArrayList<>(c.getLanguages().values()))
                 .borders(c.getBorders())
                 .sizeCategory(size(c.getPopulation()))
                 .build();
