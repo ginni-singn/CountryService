@@ -1,0 +1,128 @@
+# CountryService
+
+A Spring Boot microservice that fetches country data from the public [REST Countries v3.1 API](https://restcountries.com) and returns a clean, enriched response with business rules applied.
+
+---
+
+## What It Does
+
+- Exposes a single endpoint: `GET /countries/{code}`
+- Accepts any two-letter ISO 3166-1 alpha-2 country code (e.g. `US`, `DE`, `IN`)
+- Fetches live data from `https://restcountries.com/v3.1/alpha/{code}`
+- Returns a simplified JSON response with a population-based size category
+
+### Example
+
+**Request:**
+```
+GET /countries/US
+```
+
+**Response:**
+```json
+{
+  "countryCode": "US",
+  "name": "United States of America",
+  "capital": "Washington, D.C.",
+  "region": "Americas",
+  "currencies": ["USD"],
+  "languages": ["English"],
+  "borders": ["CAN", "MEX"],
+  "sizeCategory": "LARGE"
+}
+```
+
+---
+
+## Size Category Rules
+
+| Population | Category |
+|---|---|
+| Less than 1,000,000 | `SMALL` |
+| 1,000,000 – 10,000,000 | `MEDIUM` |
+| More than 10,000,000 | `LARGE` |
+
+---
+
+## Error Responses
+
+| Scenario | HTTP Status |
+|---|---|
+| Code is not two letters (e.g. `USA`) | `400 Bad Request` |
+| Country not found (e.g. `ZZ`) | `404 Not Found` |
+| Upstream API unreachable | `502 Bad Gateway` |
+
+---
+
+## Requirements
+
+- Java 17+
+- Maven (or use the included `./mvnw` wrapper)
+
+---
+
+## How to Run
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/ginni-singn/CountryService.git
+cd CountryService
+
+# 2. Build
+./mvnw clean package
+
+# 3. Run
+./mvnw spring-boot:run
+```
+
+The app starts on **http://localhost:8080**
+
+---
+
+## How to Test
+
+```bash
+./mvnw test
+```
+
+Tests include:
+- **Unit tests** — business rules, mapping, validation, error cases
+- **Integration tests** — full request/response cycle with WireMock (no real network calls)
+
+---
+
+## Try It Out
+
+```bash
+curl http://localhost:8080/countries/US
+curl http://localhost:8080/countries/IN
+curl http://localhost:8080/countries/MT   # island nation, no borders
+curl http://localhost:8080/countries/USA  # → 400 Bad Request
+```
+
+---
+
+## Project Structure
+
+```
+src/
+├── main/java/com/countryservice/
+│   ├── controller/     # HTTP layer (routing, status codes)
+│   ├── service/        # Business logic and mapping
+│   ├── model/          # Request/response DTOs
+│   ├── exception/      # Custom exceptions + global error handler
+│   └── config/         # Spring beans (RestTemplate)
+└── test/java/com/countryservice/
+    ├── controller/     # MockMvc slice tests
+    ├── service/        # Unit tests
+    └── integration/    # WireMock integration tests
+```
+
+---
+
+## Design Decisions
+
+- **RestTemplate is a Spring bean** (not `new`-ed inside the service) so it can be injected and mocked in tests
+- **Layered architecture** — controller, service, model, and exception layers are clearly separated so new features (e.g. caching, new endpoints) can be added without touching unrelated code
+- **Null-safe mapping** — all upstream fields are null-checked to prevent NPEs for edge cases like island nations (no borders) or countries with no listed capital
+- **Externalised base URL** — the upstream API URL lives in `application.properties` so it can be overridden in tests or different environments without code changes
